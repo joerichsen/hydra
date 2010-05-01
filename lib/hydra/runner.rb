@@ -16,9 +16,14 @@ module Hydra #:nodoc:
     # Boot up a runner. It takes an IO object (generally a pipe from its
     # parent) to send it messages on which files to execute.
     def initialize(opts = {})
-      @io = opts.fetch(:io) { raise "No IO Object" } 
-      @verbose = opts.fetch(:verbose) { false }      
+      @io = opts.fetch(:io) { raise "No IO Object" }
+      @verbose = opts.fetch(:verbose) { false }
       $stdout.sync = true
+
+      trace 'Creating test database'
+      ENV['TEST_ENV_NUMBER'] = Process.pid.to_s
+      Rake::Task['db:reset'].invoke
+
       trace 'Booted. Sending Request for file'
 
       @io.write RequestFile.new
@@ -51,6 +56,10 @@ module Hydra #:nodoc:
 
     # Stop running
     def stop
+      trace 'Dropping test database'
+      ENV['TEST_ENV_NUMBER'] = Process.pid.to_s
+      Rake::Task['db:drop'].invoke
+
       @running = false
     end
 
